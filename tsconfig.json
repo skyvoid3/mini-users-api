@@ -5,7 +5,7 @@
     "module": "ESNext",                  // Use ES Modules (needed for import/export syntax)
     "moduleResolution": "node",          // Resolves modules like Node.js does
     "outDir": "./dist",                  // Output directory for compiled JS
-    "rootDir": "./src",                  // Where your TS source files live
+    "rootDir": "./src",                  // Where TS source files live
     "sourceMap": true,                   // Generate .map files for debugging
 
     // Type System Strictness
@@ -25,7 +25,7 @@
   },
 
   "ts-node": {
-    "esm": true,                         // Needed if you use ES modules
+    "esm": true,                         // Use ES modules
     "transpileOnly": false              // Enforce full type checking at runtime
   },
 
