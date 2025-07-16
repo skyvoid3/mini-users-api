@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import usersQueries, { dbDeleteUser } from '../database/usersQueries';
+import usersQueries from '../database/usersQueries';
 import { HttpError } from '../middleware/error';
 import {
     validateUserInput,
     validateParamNumber,
     validateUserBody,
     validateUserPatchBody,
+    validateParamString,
 } from '../utils';
 import { User } from '../myTypes/types.ts';
 
@@ -24,13 +25,8 @@ export const getUsers = (
 
     const limit = validated ?? 10;
 
-    if (limit === undefined) {
-        next(new HttpError('Invalid query', 400));
-        return;
-    }
-
     try {
-        const users = usersQueries.getUsers(limit);
+        const users = usersQueries.dbGetUsers(limit);
         res.json(users);
     } catch (err) {
         next(err);
@@ -56,7 +52,7 @@ export const getUserById = (
     }
 
     try {
-        const user: User | undefined = usersQueries.getUserById(id);
+        const user: User | undefined = usersQueries.dbGetUserById(id);
 
         if (user === undefined) {
             next(new HttpError('User not found', 404));
@@ -100,6 +96,40 @@ export const getUserById = (
 };
 
 /**
+ * Get user by username
+ * @route GET /api/users/:username
+ */
+export const getUserByUsername = (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): void => {
+    const username: string | undefined = validateParamString(
+        req.params.username,
+    );
+
+    if (username === undefined) {
+        next(new HttpError('User Not Found', 404));
+        return;
+    }
+
+    try {
+        const user: User | undefined =
+            usersQueries.dbGetUserByUsername(username);
+
+        if (user === undefined) {
+            next(new HttpError('User Not Found', 404));
+            return;
+        }
+
+        res.json(user);
+        return;
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * Create a new user
  * @route POST /api/users
  */
@@ -109,7 +139,6 @@ export const createUser = (
     next: NextFunction,
 ): void => {
     const userBody: User | undefined = validateUserBody(req.body);
-    console.log(req.body);
 
     if (userBody === undefined) {
         next(new HttpError('Invalid key names', 400));
@@ -118,12 +147,13 @@ export const createUser = (
 
     const user = userBody;
 
-    if (!validateUserInput(user.fname, user.lname, user.email)) {
+    if (!validateUserInput(user.username, user.fname, user.lname, user.email)) {
         next(new HttpError('Invalid credentials', 400));
         return;
     }
 
     const result = usersQueries.dbAddNewUser(
+        user.username,
         user.fname,
         user.lname,
         user.email,
@@ -152,7 +182,7 @@ export const deleteUserById = (
         return;
     }
 
-    const deletedUser = dbDeleteUser(id);
+    const deletedUser = usersQueries.dbDeleteUser(id);
 
     if (deletedUser > 0) {
         console.log(`User deleted. Id: ${id}`);
@@ -192,7 +222,7 @@ export const changeUserInfoById = (
 
     const id = validId;
 
-    const existingUser = usersQueries.getUserById(id);
+    const existingUser = usersQueries.dbGetUserById(id);
 
     if (existingUser === undefined) {
         next(new HttpError('User Not Found', 404));
@@ -203,6 +233,7 @@ export const changeUserInfoById = (
 
     try {
         const result = usersQueries.dbUpdateUser(
+            updatedUser.username,
             updatedUser.fname,
             updatedUser.lname,
             updatedUser.email,

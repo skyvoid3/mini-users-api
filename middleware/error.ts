@@ -11,13 +11,7 @@ export class HttpError extends Error {
 }
 
 function isHttpError(error: unknown): error is HttpError {
-    return (
-        typeof error === 'object' &&
-        error !== null &&
-        'message' in error &&
-        typeof (error as any).message === 'string' &&
-        ('status' in error ? typeof (error as any).status === 'number' : true)
-    );
+    return error instanceof HttpError;
 }
 
 export const errorHandler = (
@@ -26,6 +20,8 @@ export const errorHandler = (
     res: Response,
     next: NextFunction,
 ): void => {
+    console.log('\n[ INTERNAL ERROR ]\n\n', err);
+
     if (isHttpError(err)) {
         res.status(err.status ?? 500).json({ message: err.message });
     } else if (err instanceof Error) {

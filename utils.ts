@@ -1,27 +1,39 @@
+import test from 'node:test';
 import { User } from './myTypes/types.ts';
-
 
 // This function checks if the input for creating a new user is valid
 // and doesnt containt any unwanted data
 export function validateUserInput(
+    username: string,
     fname: string,
     lname: string,
     email: string,
 ): boolean {
-
     try {
-    fname = fname.trim();
-    lname = lname.trim();
-    email = email.trim();
+        username = username.trim();
+        fname = fname.trim();
+        lname = lname.trim();
+        email = email.trim();
     } catch {
         return false;
     }
 
     const testName = /^[a-zA-Z]+$/;
+    const testUsername = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
 
-    if (fname.length > 20 || lname.length > 20) return false;
+    if (
+        username.length > 30 ||
+        username.length < 3 ||
+        fname.length > 20 ||
+        lname.length > 20
+    )
+        return false;
 
-    if (!testName.test(fname) || !testName.test(lname)) {
+    if (
+        !testUsername.test(username) ||
+        !testName.test(fname) ||
+        !testName.test(lname)
+    ) {
         return false;
     }
 
@@ -42,11 +54,15 @@ export function validateUserInput(
 }
 
 // Parse :id or query params to validate that input is valid number
-export function validateParamNumber(param: string | undefined): number | undefined {
-    if (typeof param === 'string') {
+export function validateParamNumber(
+    param: string | undefined,
+): number | undefined {
+    if (param !== undefined) {
         if (param.includes('.')) {
             return undefined;
         }
+    } else if (param === undefined) {
+        return undefined;
     }
 
     const numberParam = Number(param);
@@ -58,17 +74,37 @@ export function validateParamNumber(param: string | undefined): number | undefin
     return numberParam;
 }
 
-// Validate that JSON body sent to create new user is valid
-export function validateUserBody(user: object): User | undefined {
-    
-    const inputKeys = Object.keys(user);
-
-    if (inputKeys.length !== 3) {
+export function validateParamString(
+    param: string | undefined,
+): string | undefined {
+    if (param === undefined) {
         return undefined;
     }
 
-    const allowedKeys = ['fname', 'lname', 'email'];
+    const trimmedParam = param.trim();
 
+    if (trimmedParam.length < 3 || trimmedParam.length > 30) {
+        return undefined;
+    }
+
+    const testUsername = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
+
+    if (!testUsername.test(trimmedParam)) {
+        return undefined;
+    }
+
+    return trimmedParam;
+}
+
+// Validate that JSON body sent to create new user is valid
+export function validateUserBody(user: object): User | undefined {
+    const inputKeys = Object.keys(user);
+
+    if (inputKeys.length !== 4) {
+        return undefined;
+    }
+
+    const allowedKeys = ['username', 'fname', 'lname', 'email'];
 
     for (const key of inputKeys) {
         if (!allowedKeys.includes(key)) {
@@ -81,15 +117,13 @@ export function validateUserBody(user: object): User | undefined {
 
 // Validate that JSON body to change existing user data is valid
 export function validateUserPatchBody(user: object): User | undefined {
-    
     const inputKeys = Object.keys(user);
 
-    if (inputKeys.length === 0 || inputKeys.length > 3) {
+    if (inputKeys.length === 0 || inputKeys.length > 4) {
         return undefined;
     }
 
-    const allowedKeys = ['fname', 'lname', 'email'];
-
+    const allowedKeys = ['username', 'fname', 'lname', 'email'];
 
     for (const key of inputKeys) {
         if (!allowedKeys.includes(key)) {
@@ -99,4 +133,3 @@ export function validateUserPatchBody(user: object): User | undefined {
 
     return user as User;
 }
-

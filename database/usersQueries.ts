@@ -3,29 +3,35 @@ import db from './index.js';
 import { User } from '../myTypes/types.ts';
 
 export const dbAddNewUser = (
+    username: string,
     fname: string,
     lname: string,
     email: string,
 ): number | bigint => {
     const stmt = db.prepare(
-        'INSERT INTO users (fname, lname, email) VALUES (?, ?, ?)',
+        'INSERT INTO users (username, fname, lname, email) VALUES (?, ?, ?, ?)',
     );
-    const result = stmt.run(fname, lname, email);
+    const result = stmt.run(username, fname, lname, email);
     return result.lastInsertRowid;
 };
 
-export const getUserById = (id: number): User | undefined => {
+export const dbGetUserById = (id: number): User | undefined => {
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-    const row = stmt.get(id);
-    return row as User | undefined;
+    const user = stmt.get(id);
+    return user as User | undefined;
 };
 
-export const getUsers = (limit: number): User[] | undefined => {
+export const dbGetUserByUsername = (username: string): User | undefined => {
+    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+    const user = stmt.get(username);
+    return user as User | undefined;
+};
+
+export const dbGetUsers = (limit: number): User[] | undefined => {
     const stmt = db.prepare('SELECT * FROM users LIMIT ?');
     const users = stmt.all(limit);
     return users as User[] | undefined;
 };
-
 
 export const dbDeleteUser = (id: number): number => {
     const stmt = db.prepare('DELETE FROM users WHERE id = ?');
@@ -34,28 +40,32 @@ export const dbDeleteUser = (id: number): number => {
 };
 
 export const dbUpdateUser = (
+    username: string,
     fname: string,
     lname: string,
     email: string,
     id: number,
 ): number | bigint => {
     const stmt = db.prepare(
-        `UPDATE users SET fname = ?, lname = ?, email = ? WHERE id = ?`,
+        `UPDATE users SET username = ?, fname = ?, lname = ?, email = ? WHERE id = ?`,
     );
-    const result = stmt.run(fname, lname, email, id);
+    const result = stmt.run(username, fname, lname, email, id);
     return result.changes;
 };
 
 interface UsersQueries {
     dbAddNewUser: (
+        username: string,
         fname: string,
         lname: string,
         email: string,
     ) => number | bigint;
-    getUserById: (id: number) => User | undefined;
-    getUsers: (limit: number) => User[] | undefined;
+    dbGetUserByUsername: (username: string) => User | undefined;
+    dbGetUserById: (id: number) => User | undefined;
+    dbGetUsers: (limit: number) => User[] | undefined;
     dbDeleteUser: (id: number) => number;
     dbUpdateUser: (
+        username: string,
         fname: string,
         lname: string,
         email: string,
@@ -65,10 +75,11 @@ interface UsersQueries {
 
 const usersQueries: UsersQueries = {
     dbAddNewUser,
-    getUserById,
-    getUsers,
+    dbGetUserById,
+    dbGetUsers,
+    dbGetUserByUsername,
     dbDeleteUser,
-    dbUpdateUser
+    dbUpdateUser,
 };
 
 export default usersQueries;
