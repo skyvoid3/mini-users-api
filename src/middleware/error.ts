@@ -19,12 +19,28 @@ export class InputError extends Error {
     }
 }
 
+export class SqliteError extends Error {
+    code?: string;
+
+    constructor(message: string, code?: string) {
+        super(message);
+        if (code !== undefined) {
+            this.code = code;
+        }
+        Object.setPrototypeOf(this, SqliteError.prototype);
+    }
+}
+
 function isHttpError(error: unknown): error is HttpError {
     return error instanceof HttpError;
 }
 
 function isInputError(error: unknown): error is InputError {
     return error instanceof InputError;
+}
+
+function isSqliteError(error: unknown): error is SqliteError {
+    return error instanceof SqliteError;
 }
 
 export const errorHandler = (
@@ -38,6 +54,8 @@ export const errorHandler = (
     if (isHttpError(err)) {
         res.status(err.status ?? 500).json({ message: err.message });
     } else if (isInputError(err)) {
+        res.status(400).json({ message: err.message });
+    } else if (isSqliteError(err)) {
         res.status(400).json({ message: err.message });
     } else if (err instanceof Error) {
         res.status(500).json({ message: 'Error Occured' });

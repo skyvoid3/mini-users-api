@@ -34,3 +34,11 @@ export function basicAuth(
     res.status(401).send('Invalid Credentials');
     return;
 }
+
+export function JWTAuth(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): void {
+
+}

@@ -2,14 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import usersQueries from '../database/usersQueries';
 import { HttpError } from '../middleware/error';
 import {
-    validateUserInput,
     validateParamNumber,
     validateUserPatchBody,
     validateUsernameString,
-    validateNewUserBody,
-} from '../utils';
-import { hashUserPassword } from '../auth/hash';
-import { User, UserAuth, NewUser, NewUserAuth } from '../myTypes/types';
+} from '../utils/validators';
+import { User } from '../myTypes/types';
 
 /**
  * Get all users
@@ -119,36 +116,6 @@ export const getUserByUsername = (
         return;
     }
 };
-
-/**
- * Create a new user
- * @route POST /api/users
- */
-export async function createUser(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-): Promise<void> {
-    try {
-        const userBody: NewUser = validateNewUserBody(req.body);
-
-        const user = validateUserInput(userBody);
-
-        const hashedPassword = await hashUserPassword(user.password);
-
-        const newUserId = usersQueries.dbAddUserWithAuth(user, hashedPassword);
-
-        console.log(`ID: ${newUserId}`);
-
-        res.status(201).json({
-            message: 'User created',
-            username: user.username,
-        });
-    } catch (err) {
-        next(err);
-        return;
-    }
-}
 
 /*
  * Delete user by ID

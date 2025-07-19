@@ -12,7 +12,7 @@ export interface NewUser {
     fname: string;
     lname: string;
     email: string;
-    password: string;   
+    password: string;
 }
 export interface UserAuth {
     user_id: number;
@@ -23,6 +23,25 @@ export interface UserAuth {
 export interface NewUserAuth {
     user_id: number;
     password_hash: string;
+}
+
+export interface Credentials {
+    username: string;
+    password: string;
+}
+
+export interface UsernameId {
+    id: number;
+    username: string;
+}
+
+export interface UserPwdHash {
+    password_hash: string;
+}
+
+export interface LoginResponse {
+    message: string;
+    token: string;
 }
 
 export const nameRegex = /^[a-zA-Z]+$/;
@@ -38,3 +57,4 @@ export const allowedKeysAuth = [
     'email',
     'password',
 ];
+export const allowedKeysCreds = ['username', 'password'];

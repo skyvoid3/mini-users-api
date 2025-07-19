@@ -4,6 +4,7 @@ import path from 'path';
 import { errorHandler } from './middleware/error.js';
 import usersRouter from './routes/usersRoutes.js';
 import devLogger from './middleware/logger.js';
+import authRouter from './routes/authRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,7 +38,11 @@ app.get('/', (_req, res): void => {
 // Router for users api
 app.use('/api/users', usersRouter);
 
-// Erro Handling Middleware
+
+// Router for auth api
+app.use('/api/auth', authRouter);
+
+// Error Handling Middleware
 app.use(errorHandler);
 
 app.listen(7070, (): void => {

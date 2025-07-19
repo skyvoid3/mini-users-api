@@ -1,4 +1,6 @@
 import bcrypt from 'bcrypt';
+import { Credentials } from '../myTypes/types';
+import { HttpError } from '../middleware/error';
 
 const SALT_CYCLES = 10;
 
@@ -12,4 +14,17 @@ export async function hashUserPassword(raw_pass: string): Promise<string> {
         console.error('Hash Password Fail', err);
         throw err as Error;
     }
+}
+
+export async function confirmUserPassword(
+    raw_pwd: string,
+    id: number,
+    pwd_hash: string,
+): Promise<boolean> {
+    if (pwd_hash === undefined) {
+        throw new HttpError('User Not Found', 404);
+    }
+    let isValid: boolean = await bcrypt.compare(raw_pwd, pwd_hash);
+
+    return isValid;
 }

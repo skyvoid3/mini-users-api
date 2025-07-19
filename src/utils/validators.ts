@@ -1,5 +1,5 @@
-import { User, UserAuth, NewUser, NewUserAuth } from './myTypes/types';
-import { InputError } from './middleware/error';
+import { User, NewUser, Credentials, allowedKeysCreds } from '../myTypes/types';
+import { InputError } from '../middleware/error';
 import {
     nameRegex,
     usrnameRegex,
@@ -7,7 +7,7 @@ import {
     allowedKeys,
     allowedKeysAuth,
     passwordRegex,
-} from './myTypes/types';
+} from '../myTypes/types';
 
 // This function checks if the input for creating a new user is valid
 // and doesnt containt any unwanted data
@@ -61,10 +61,7 @@ export function validateUserInput(u: NewUser): NewUser {
 }
 
 //TODO Maybe make a single funcion that validates any number of keys
-export function validateSingleField(
-    key: string,
-    value: string | undefined,
-): string {
+function validateSingleField(key: string, value: string | undefined): string {
     if (value === undefined) {
         throw new InputError('Invalid Input');
     }
@@ -199,4 +196,35 @@ export function validateUserPatchBody(user: object): User {
     }
 
     return user as User;
+}
+
+function validateLoginFields(creds: Credentials): void {
+    const u = creds.username.trim();
+    const psw = creds.password;
+
+    if (!usrnameRegex.test(u) || !u || u.length > 30 || u.length < 3) {
+        throw new InputError('Wrong Username');
+    }
+
+    if (!passwordRegex.test(psw)) {
+        throw new InputError('Wrong Password');
+    }
+}
+
+export function validateLoginBody(creds: object): Credentials {
+    const inputKeys = Object.keys(creds);
+
+    if (inputKeys.length !== 2) {
+        throw new InputError('Wrong number of fields');
+    }
+
+    for (const key of inputKeys) {
+        if (!allowedKeysCreds.includes(key)) {
+            throw new InputError('Wrong field names');
+        }
+    }
+
+    validateLoginFields(creds as Credentials);
+
+    return creds as Credentials;
 }
