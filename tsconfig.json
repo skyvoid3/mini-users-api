@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     // Output & Module
-    "target": "ES2021",                  // Modern JS features, Node-compatible
+    "lib": ["ESNext"],
+    "target": "ESNext",                  // Modern JS features, Node-compatible
     "module": "ESNext",                  // Use ES Modules (needed for import/export syntax)
     "moduleResolution": "node",          // Resolves modules like Node.js does
     "outDir": "./dist",                  // Output directory for compiled JS
