@@ -5,8 +5,17 @@ export class HttpError extends Error {
 
     constructor(message: string, status?: number) {
         super(message);
-        this.status = status;
+        if (status !== undefined) {
+            this.status = status;
+        }
         Object.setPrototypeOf(this, HttpError.prototype);
+    }
+}
+
+export class InputError extends Error {
+    constructor(message: string) {
+        super(message);
+        Object.setPrototypeOf(this, InputError.prototype);
     }
 }
 
@@ -14,8 +23,12 @@ function isHttpError(error: unknown): error is HttpError {
     return error instanceof HttpError;
 }
 
+function isInputError(error: unknown): error is InputError {
+    return error instanceof InputError;
+}
+
 export const errorHandler = (
-    err: Error,
+    err: unknown,
     req: Request,
     res: Response,
     next: NextFunction,
@@ -24,6 +37,8 @@ export const errorHandler = (
 
     if (isHttpError(err)) {
         res.status(err.status ?? 500).json({ message: err.message });
+    } else if (isInputError(err)) {
+        res.status(400).json({ message: err.message });
     } else if (err instanceof Error) {
         res.status(500).json({ message: 'Error Occured' });
     } else {

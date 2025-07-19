@@ -12,13 +12,11 @@
   </header>
   <main>
     <p>This is a basic static page served by Express.</p>
-    <button id="clickMe">Click me</button>
+    <button id="get-users-btn" type="button">Load Users</button>
+    <div id="output" role="region" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="/static/js/main.js"></script>
   </main>
-  <script>
-    document.getElementById('clickMe').addEventListener('click', () => {
-      alert('Button clicked!');
-    });
-  </script>
 </body>
 </html>
 

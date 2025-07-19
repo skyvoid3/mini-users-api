@@ -1,0 +1,29 @@
+import db from './index';
+
+db.prepare(
+    `
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        fname TEXT NOT NULL,
+        lname TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );   
+`,
+).run();
+
+db.prepare(
+    `
+    CREATE TABLE IF NOT EXISTS user_auth (
+        user_id INTEGER PRIMARY KEY,
+        password_hash VARCHAR NOT NULL,
+        last_changed_at TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+`,
+).run();
+
+console.log('Users table created');
+console.log('User auth table created');

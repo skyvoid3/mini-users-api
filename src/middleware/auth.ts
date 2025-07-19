@@ -17,7 +17,7 @@ export function basicAuth(
         return;
     }
 
-    const base64Credentials = authHeader.split(' ')[1]; 
+    const base64Credentials = authHeader.split(' ')[1];
     const decodedCredentials = Buffer.from(
         base64Credentials,
         'base64',
@@ -34,4 +34,3 @@ export function basicAuth(
     res.status(401).send('Invalid Credentials');
     return;
 }
-

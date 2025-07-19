@@ -30,6 +30,10 @@ app.use(express.json());
 // Static Files Middleware
 app.use('/static', express.static(path.join(__dirname, 'public'), staticOptions));
 
+app.get('/', (_req, res): void => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Router for users api
 app.use('/api/users', usersRouter);
 

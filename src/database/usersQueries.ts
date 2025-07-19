@@ -1,6 +1,7 @@
 // The common statements/queries for working with users database
-import db from './index.js';
-import { User } from '../myTypes/types.ts';
+import db from './index';
+import { NewUser, User } from '../myTypes/types';
+import { HttpError } from '../middleware/error';
 
 export const dbAddNewUser = (
     username: string,
@@ -13,6 +14,37 @@ export const dbAddNewUser = (
     );
     const result = stmt.run(username, fname, lname, email);
     return result.lastInsertRowid;
+};
+
+export const dbAddNewUserAuth = (
+    id: number | bigint,
+    password_hash: string,
+): number | bigint => {
+    const stmt = db.prepare(
+        'INSERT INTO user_auth (user_id, password_hash) VALUES (?, ?)',
+    );
+    const result = stmt.run(id, password_hash);
+    return result.changes;
+};
+
+export const dbAddUserWithAuth = (
+    u: NewUser,
+    password_hash: string,
+    ): number | bigint => {
+    const newUserId = dbAddNewUser(
+        u.username,
+        u.fname,
+        u.lname,
+        u.email,
+    );
+
+    const result = dbAddNewUserAuth(newUserId, password_hash);
+
+    if (result !== 1) {
+        throw new HttpError('Failed to save user', 500);
+    }
+
+    return newUserId;
 };
 
 export const dbGetUserById = (id: number): User | undefined => {
@@ -60,6 +92,14 @@ interface UsersQueries {
         lname: string,
         email: string,
     ) => number | bigint;
+    dbAddNewUserAuth: (
+        id: number | bigint,
+        password_hash: string,
+    ) => number | bigint;
+    dbAddUserWithAuth: (
+        u: NewUser,
+        password_hash: string,
+    ) => number | bigint;
     dbGetUserByUsername: (username: string) => User | undefined;
     dbGetUserById: (id: number) => User | undefined;
     dbGetUsers: (limit: number) => User[] | undefined;
@@ -75,6 +115,8 @@ interface UsersQueries {
 
 const usersQueries: UsersQueries = {
     dbAddNewUser,
+    dbAddNewUserAuth,
+    dbAddUserWithAuth,
     dbGetUserById,
     dbGetUsers,
     dbGetUserByUsername,

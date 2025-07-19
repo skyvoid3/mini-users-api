@@ -4,11 +4,12 @@ import { HttpError } from '../middleware/error';
 import {
     validateUserInput,
     validateParamNumber,
-    validateUserBody,
     validateUserPatchBody,
-    validateParamString,
+    validateUsernameString,
+    validateNewUserBody,
 } from '../utils';
-import { User } from '../myTypes/types.ts';
+import { hashUserPassword } from '../auth/hash';
+import { User, UserAuth, NewUser, NewUserAuth } from '../myTypes/types';
 
 /**
  * Get all users
@@ -21,11 +22,11 @@ export const getUsers = (
     next: NextFunction,
 ): void => {
     const rawLimit = req.query.limit as string | undefined;
-    const validated: number | undefined = validateParamNumber(rawLimit);
-
-    const limit = validated ?? 10;
-
     try {
+        const validated: number = validateParamNumber(rawLimit);
+
+        const limit = validated ?? 10;
+
         const users = usersQueries.dbGetUsers(limit);
         res.json(users);
     } catch (err) {
@@ -44,18 +45,13 @@ export const getUserById = (
     res: Response,
     next: NextFunction,
 ): void => {
-    const id: number | undefined = validateParamNumber(req.params.id);
-
-    if (id === undefined) {
-        next(new HttpError('Invalid Id', 400));
-        return;
-    }
-
     try {
+        const id: number = validateParamNumber(req.params.id);
+
         const user: User | undefined = usersQueries.dbGetUserById(id);
 
         if (user === undefined) {
-            next(new HttpError('User not found', 404));
+            next(new HttpError('User Not Found', 404));
             return;
         }
 
@@ -92,6 +88,7 @@ export const getUserById = (
         res.json(user);
     } catch (err) {
         next(err);
+        return;
     }
 };
 
@@ -104,16 +101,9 @@ export const getUserByUsername = (
     res: Response,
     next: NextFunction,
 ): void => {
-    const username: string | undefined = validateParamString(
-        req.params.username,
-    );
-
-    if (username === undefined) {
-        next(new HttpError('User Not Found', 404));
-        return;
-    }
-
     try {
+        const username: string = validateUsernameString(req.params.username);
+
         const user: User | undefined =
             usersQueries.dbGetUserByUsername(username);
 
@@ -126,6 +116,7 @@ export const getUserByUsername = (
         return;
     } catch (err) {
         next(err);
+        return;
     }
 };
 
@@ -133,41 +124,35 @@ export const getUserByUsername = (
  * Create a new user
  * @route POST /api/users
  */
-export const createUser = (
+export async function createUser(
     req: Request,
     res: Response,
     next: NextFunction,
-): void => {
-    const userBody: User | undefined = validateUserBody(req.body);
+): Promise<void> {
+    try {
+        const userBody: NewUser = validateNewUserBody(req.body);
 
-    if (userBody === undefined) {
-        next(new HttpError('Invalid key names', 400));
+        const user = validateUserInput(userBody);
+
+        const hashedPassword = await hashUserPassword(user.password);
+
+        const newUserId = usersQueries.dbAddUserWithAuth(user, hashedPassword);
+
+        console.log(`ID: ${newUserId}`);
+
+        res.status(201).json({
+            message: 'User created',
+            username: user.username,
+        });
+    } catch (err) {
+        next(err);
         return;
     }
-
-    const user = userBody;
-
-    if (!validateUserInput(user.username, user.fname, user.lname, user.email)) {
-        next(new HttpError('Invalid credentials', 400));
-        return;
-    }
-
-    const result = usersQueries.dbAddNewUser(
-        user.username,
-        user.fname,
-        user.lname,
-        user.email,
-    );
-
-    console.log(`ID: ${result}`);
-
-    res.json({ message: 'User created', user: user });
-    return;
-};
+}
 
 /*
  * Delete user by ID
- * @route DELETE /api/users/:id
+ * @route DELETE /api/users/id/:id
  * @note  User must authenticate to delete
  */
 export const deleteUserById = (
@@ -175,63 +160,53 @@ export const deleteUserById = (
     res: Response,
     next: NextFunction,
 ): void => {
-    const id: number | undefined = validateParamNumber(req.params.id);
+    try {
+        const id: number = validateParamNumber(req.params.id);
 
-    if (id === undefined) {
-        next(new HttpError('Invalid Id', 400));
-        return;
-    }
+        const deletedUser = usersQueries.dbDeleteUser(id);
 
-    const deletedUser = usersQueries.dbDeleteUser(id);
-
-    if (deletedUser > 0) {
-        console.log(`User deleted. Id: ${id}`);
-        res.status(204).end();
-        return;
-    } else {
-        console.log(`Couldn't delete user. Id: ${id}`);
-        next(new HttpError('User not found', 404));
+        if (deletedUser > 0) {
+            console.log(`User Deleted. Id: ${id}`);
+            res.status(204).end();
+            return;
+        } else {
+            console.log(`Couldn't Delete User. Id: ${id}`);
+            next(new HttpError('User Not Found', 404));
+            return;
+        }
+    } catch (err) {
+        next(err);
         return;
     }
 };
 
 /**
  * Change user information
- * @route PATCH /api/users/:id
+ * @route PATCH /api/users/id/:id
+ * This controller has issue that it can only change info by provided /id/:id and doesnt
+ * support /users/:username path
  */
 export const changeUserInfoById = (
     req: Request,
     res: Response,
     next: NextFunction,
 ): void => {
-    const userBody: User | undefined = validateUserPatchBody(req.body);
-
-    if (userBody === undefined) {
-        next(new HttpError('Invalid input', 400));
-        return;
-    }
-
-    const newUserInfo = userBody;
-
-    const validId = validateParamNumber(req.params.id);
-
-    if (validId === undefined) {
-        next(new HttpError('Invalid Id', 400));
-        return;
-    }
-
-    const id = validId;
-
-    const existingUser = usersQueries.dbGetUserById(id);
-
-    if (existingUser === undefined) {
-        next(new HttpError('User Not Found', 404));
-        return;
-    }
-
-    const updatedUser: User = { ...existingUser, ...newUserInfo };
-
     try {
+        const userBody: User = validateUserPatchBody(req.body);
+
+        const newUserInfo = userBody;
+
+        const id = validateParamNumber(req.params.id);
+
+        const existingUser = usersQueries.dbGetUserById(id);
+
+        if (existingUser === undefined) {
+            next(new HttpError('User Not Found', 404));
+            return;
+        }
+
+        const updatedUser: User = { ...existingUser, ...newUserInfo };
+
         const result = usersQueries.dbUpdateUser(
             updatedUser.username,
             updatedUser.fname,
@@ -244,10 +219,7 @@ export const changeUserInfoById = (
 
         res.json({ msg: 'Updated successfuly' });
     } catch (err) {
-        console.log(err);
-        next(new HttpError('Internal error', 500));
+        next(err);
         return;
     }
-
-    console.log(updatedUser);
 };
