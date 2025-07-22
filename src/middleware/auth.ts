@@ -1,44 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+import { HttpError } from './error';
+import { AuthenticatedRequest } from '../myTypes/types';
 
-// Basic Authentication middleware.
-// Credentials are passed base64 encoded and not encrypted
-// This Middleware is for education purposes only
-// AND NOT FOR PRODUCTION
-export function basicAuth(
-    req: Request,
+dotenv.config();
+
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
+
+// JWT Autentication
+export function JWTAuth(
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
 ): void {
     const authHeader = req.headers['authorization'];
 
-    if (!authHeader) {
-        res.set('WWW-Authenticate', 'Basic realm="Users API"');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        res.set('WWW-Authenticate', 'Bearer realm="Users API"');
         res.status(401).send('Authentication Required');
         return;
     }
 
-    const base64Credentials = authHeader.split(' ')[1];
-    const decodedCredentials = Buffer.from(
-        base64Credentials,
-        'base64',
-    ).toString('utf8');
-
-    const [username, password] = decodedCredentials.split(':');
-
-    if (username === 'admin' && password === 'admin') {
-        next();
+    if (!JWT_SECRET_KEY) {
+        next(new Error('Failed to load jwt secret key'));
         return;
     }
 
-    res.set('WWW-Authenticate', 'Basic realm="Users API"');
-    res.status(401).send('Invalid Credentials');
-    return;
-}
-
-export function JWTAuth(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-): void {
-
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET_KEY) as {
+            id: number;
+            username: string;
+            [key: string]: any;
+        };
+        req.user = decoded;
+        next();
+    } catch (err) {
+        console.error(err);
+        next(new HttpError('Invalid Token', 401));
+        return;
+    }
 }

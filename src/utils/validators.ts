@@ -203,11 +203,11 @@ function validateLoginFields(creds: Credentials): void {
     const psw = creds.password;
 
     if (!usrnameRegex.test(u) || !u || u.length > 30 || u.length < 3) {
-        throw new InputError('Wrong Username');
+        throw new InputError('Wrong Username Format');
     }
 
     if (!passwordRegex.test(psw)) {
-        throw new InputError('Wrong Password');
+        throw new InputError('Wrong Password Format');
     }
 }
 

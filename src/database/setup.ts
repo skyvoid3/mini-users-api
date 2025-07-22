@@ -25,5 +25,18 @@ db.prepare(
 `,
 ).run();
 
+db.prepare(
+    `
+    CREATE TABLE IF NOT EXISTS sessions (
+        session_id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expires_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+`
+).run();
+
 console.log('Users table created');
 console.log('User auth table created');
+console.log('Sessions table created');

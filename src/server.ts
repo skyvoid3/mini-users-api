@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/error.js';
 import usersRouter from './routes/usersRoutes.js';
 import devLogger from './middleware/logger.js';
 import authRouter from './routes/authRoutes.js';
+import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,9 @@ app.use(devLogger);
 
 // JSON Middleware
 app.use(express.json());
+
+// Cookie Parser
+app.use(cookieParser());
 
 // Static Files Middleware
 app.use('/static', express.static(path.join(__dirname, 'public'), staticOptions));

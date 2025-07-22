@@ -1,5 +1,4 @@
 import bcrypt from 'bcrypt';
-import { Credentials } from '../myTypes/types';
 import { HttpError } from '../middleware/error';
 
 const SALT_CYCLES = 10;
@@ -16,9 +15,9 @@ export async function hashUserPassword(raw_pass: string): Promise<string> {
     }
 }
 
+// Validating the password
 export async function confirmUserPassword(
     raw_pwd: string,
-    id: number,
     pwd_hash: string,
 ): Promise<boolean> {
     if (pwd_hash === undefined) {

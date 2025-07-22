@@ -1,6 +1,12 @@
 // The common statements/queries for working with users database
 import db from './index';
-import { NewUser, User, UsernameId, UserPwdHash } from '../myTypes/types';
+import {
+    NewUser,
+    Session,
+    User,
+    UsernameId,
+    UserPwdHash,
+} from '../myTypes/types';
 import { SqliteError } from '../middleware/error';
 
 export const dbAddNewUser = (
@@ -58,6 +64,18 @@ export const dbAddUserWithAuth = (
     return newUserId;
 };
 
+export const dbAddSession = (
+    sessionId: string,
+    userId: number,
+    expiresAt: string,
+): number | bigint => {
+    const stmt = db.prepare(
+        'INSERT INTO sessions (session_id, user_id, expires_at) VALUES (?, ?, ?)',
+    );
+    const result = stmt.run(sessionId, userId, expiresAt);
+    return result.changes;
+};
+
 export const dbGetUserById = (id: number): User | undefined => {
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
     const user = stmt.get(id);
@@ -90,14 +108,27 @@ export const dbGetUserPwdHash = (id: number): string | undefined => {
     const stmt = db.prepare(
         'SELECT password_hash FROM user_auth WHERE user_id = ?',
     );
-    const pwd = stmt.get(id) as UserPwdHash | undefined;
+    const result = stmt.get(id) as UserPwdHash | undefined;
 
-    return pwd?.password_hash;
+    return result?.password_hash;
+};
+
+export const dbGetSession = (userId: number): Session | undefined => {
+    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ?');
+    const result = stmt.get(userId) as Session | undefined;
+
+    return result;
 };
 
 export const dbDeleteUser = (id: number): number => {
     const stmt = db.prepare('DELETE FROM users WHERE id = ?');
     const result = stmt.run(id);
+    return result.changes;
+};
+
+export const dbDeleteSession = (sessionId: string): number => {
+    const stmt = db.prepare('DELETE FROM sessions WHERE session_id = ?');
+    const result = stmt.run(sessionId);
     return result.changes;
 };
 
@@ -109,7 +140,7 @@ export const dbUpdateUser = (
     id: number,
 ): number | bigint => {
     const stmt = db.prepare(
-        `UPDATE users SET username = ?, fname = ?, lname = ?, email = ? WHERE id = ?`,
+        'UPDATE users SET username = ?, fname = ?, lname = ?, email = ? WHERE id = ?',
     );
     const result = stmt.run(username, fname, lname, email, id);
     return result.changes;
@@ -126,13 +157,20 @@ interface UsersQueries {
         id: number | bigint,
         password_hash: string,
     ) => number | bigint;
+    dbAddSession: (
+        sessionId: string,
+        userId: number,
+        expiresAt: string,
+    ) => number | bigint;
     dbAddUserWithAuth: (u: NewUser, password_hash: string) => number | bigint;
     dbGetUserByUsername: (username: string) => User | undefined;
     dbGetUserById: (id: number) => User | undefined;
     dbGetUserPwdHash: (id: number) => string | undefined;
     dbGetUsernameAndId: (username: string) => UsernameId | undefined;
     dbGetUsers: (limit: number) => User[] | undefined;
+    dbGetSession: (userId: number) => Session | undefined;
     dbDeleteUser: (id: number) => number;
+    dbDeleteSession: (sessionId: string) => number;
     dbUpdateUser: (
         username: string,
         fname: string,
@@ -146,12 +184,15 @@ const usersQueries: UsersQueries = {
     dbAddNewUser,
     dbAddNewUserAuth,
     dbAddUserWithAuth,
+    dbAddSession,
     dbGetUserById,
     dbGetUsernameAndId,
     dbGetUsers,
     dbGetUserPwdHash,
     dbGetUserByUsername,
+    dbGetSession,
     dbDeleteUser,
+    dbDeleteSession,
     dbUpdateUser,
 };
 
