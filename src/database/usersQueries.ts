@@ -1,13 +1,8 @@
 // The common statements/queries for working with users database
 import db from './index';
-import {
-    NewUser,
-    Session,
-    User,
-    UsernameId,
-    UserPwdHash,
-} from '../myTypes/types';
+import { NewUser, User, UsernameId } from '../myTypes/types';
 import { SqliteError } from '../middleware/error';
+import { dbAddNewUserAuth } from './authQueries';
 
 export const dbAddNewUser = (
     username: string,
@@ -39,17 +34,6 @@ export const dbAddNewUser = (
     }
 };
 
-export const dbAddNewUserAuth = (
-    id: number | bigint,
-    password_hash: string,
-): number | bigint => {
-    const stmt = db.prepare(
-        'INSERT INTO user_auth (user_id, password_hash) VALUES (?, ?)',
-    );
-    const result = stmt.run(id, password_hash);
-    return result.changes;
-};
-
 export const dbAddUserWithAuth = (
     u: NewUser,
     password_hash: string,
@@ -62,18 +46,6 @@ export const dbAddUserWithAuth = (
     }
 
     return newUserId;
-};
-
-export const dbAddSession = (
-    sessionId: string,
-    userId: number,
-    expiresAt: string,
-): number | bigint => {
-    const stmt = db.prepare(
-        'INSERT INTO sessions (session_id, user_id, expires_at) VALUES (?, ?, ?)',
-    );
-    const result = stmt.run(sessionId, userId, expiresAt);
-    return result.changes;
 };
 
 export const dbGetUserById = (id: number): User | undefined => {
@@ -104,45 +76,17 @@ export const dbGetUsers = (limit: number): User[] | undefined => {
     return users as User[] | undefined;
 };
 
-export const dbGetUserPwdHash = (id: number): string | undefined => {
-    const stmt = db.prepare(
-        'SELECT password_hash FROM user_auth WHERE user_id = ?',
-    );
-    const result = stmt.get(id) as UserPwdHash | undefined;
-
-    return result?.password_hash;
-};
-
-export const dbGetSession = (userId: number): Session | undefined => {
-    const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ?');
-    const result = stmt.get(userId) as Session | undefined;
-
-    return result;
-};
-
 export const dbDeleteUser = (id: number): number => {
     const stmt = db.prepare('DELETE FROM users WHERE id = ?');
     const result = stmt.run(id);
     return result.changes;
 };
 
-export const dbDeleteSession = (sessionId: string): number => {
-    const stmt = db.prepare('DELETE FROM sessions WHERE session_id = ?');
-    const result = stmt.run(sessionId);
-    return result.changes;
-};
-
-export const dbUpdateUser = (
-    username: string,
-    fname: string,
-    lname: string,
-    email: string,
-    id: number,
-): number | bigint => {
+export const dbUpdateUser = (id: number, u: User): number | bigint => {
     const stmt = db.prepare(
-        'UPDATE users SET username = ?, fname = ?, lname = ?, email = ? WHERE id = ?',
+        'UPDATE users SET username = ?, fname = ?, lname = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     );
-    const result = stmt.run(username, fname, lname, email, id);
+    const result = stmt.run(u.username, u.fname, u.lname, u.email, id);
     return result.changes;
 };
 
@@ -153,46 +97,23 @@ interface UsersQueries {
         lname: string,
         email: string,
     ) => number | bigint;
-    dbAddNewUserAuth: (
-        id: number | bigint,
-        password_hash: string,
-    ) => number | bigint;
-    dbAddSession: (
-        sessionId: string,
-        userId: number,
-        expiresAt: string,
-    ) => number | bigint;
     dbAddUserWithAuth: (u: NewUser, password_hash: string) => number | bigint;
     dbGetUserByUsername: (username: string) => User | undefined;
     dbGetUserById: (id: number) => User | undefined;
-    dbGetUserPwdHash: (id: number) => string | undefined;
     dbGetUsernameAndId: (username: string) => UsernameId | undefined;
     dbGetUsers: (limit: number) => User[] | undefined;
-    dbGetSession: (userId: number) => Session | undefined;
     dbDeleteUser: (id: number) => number;
-    dbDeleteSession: (sessionId: string) => number;
-    dbUpdateUser: (
-        username: string,
-        fname: string,
-        lname: string,
-        email: string,
-        id: number,
-    ) => number | bigint;
+    dbUpdateUser: (id: number, u: User) => number | bigint;
 }
 
 const usersQueries: UsersQueries = {
     dbAddNewUser,
-    dbAddNewUserAuth,
     dbAddUserWithAuth,
-    dbAddSession,
     dbGetUserById,
     dbGetUsernameAndId,
     dbGetUsers,
-    dbGetUserPwdHash,
     dbGetUserByUsername,
-    dbGetSession,
     dbDeleteUser,
-    dbDeleteSession,
     dbUpdateUser,
 };
 

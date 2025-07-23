@@ -1,4 +1,11 @@
-import { User, NewUser, Credentials, allowedKeysCreds } from '../myTypes/types';
+import {
+    User,
+    NewUser,
+    Credentials,
+    allowedKeysCreds,
+    allowedKeysPwdChange,
+    PasswordChange,
+} from '../myTypes/types';
 import { InputError } from '../middleware/error';
 import {
     nameRegex,
@@ -227,4 +234,25 @@ export function validateLoginBody(creds: object): Credentials {
     validateLoginFields(creds as Credentials);
 
     return creds as Credentials;
+}
+
+export function validatePwdPatchBody(
+    pwd: PasswordChange,
+): PasswordChange | undefined {
+    const inputKeys = Object.keys(pwd);
+
+    if (inputKeys.length !== 2) {
+        throw new InputError('Wrong number of fields');
+    }
+
+    for (const key of inputKeys) {
+        if (!allowedKeysPwdChange.includes(key)) {
+            throw new InputError('Wrong field names');
+        }
+    }
+
+    validateUserPassword(pwd.oldPassword);
+    validateUserPassword(pwd.newPassword);
+
+    return pwd;
 }

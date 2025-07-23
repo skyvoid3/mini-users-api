@@ -3,15 +3,18 @@ import usersQueries from '../database/usersQueries';
 import { HttpError } from '../middleware/error';
 import {
     validateParamNumber,
+    validatePwdPatchBody,
     validateUserPatchBody,
-    validateUsernameString,
 } from '../utils/validators';
-import { User } from '../myTypes/types';
+import { AuthenticatedRequest, PasswordChange, User } from '../myTypes/types';
+import authQueries from '../database/authQueries';
+import { confirmUserPassword, hashUserPassword } from '../auth/hash';
 
 /**
  * Get all users
  * @route GET /api/users
  * @query {number} limit - Number of users per page
+ * ONLY FOR ADMIN
  */
 export const getUsers = (
     req: Request,
@@ -32,77 +35,23 @@ export const getUsers = (
 };
 
 /**
- * Get user by ID
- * @route GET /api/users/:id
- * @query {boolean} name - If true, only the user's name will be returned
- * @query {boolean} email - If true, only the user's email will be returned
+ * Get user info
+ * @route GET /api/users/me
  */
-export const getUserById = (
-    req: Request,
+export const getUserInfo = (
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
 ): void => {
     try {
-        const id: number = validateParamNumber(req.params.id);
-
-        const user: User | undefined = usersQueries.dbGetUserById(id);
-
-        if (user === undefined) {
-            next(new HttpError('User Not Found', 404));
+        if (!req.user) {
+            next(new HttpError('Not Authenticated', 403));
             return;
         }
 
-        const name = req.query.name === 'true';
-        const email = req.query.email === 'true';
+        const userId = req.user.id;
 
-        if (name && email) {
-            const result = {
-                fname: user.fname,
-                lname: user.lname,
-                email: user.email,
-            };
-            res.json(result);
-            return;
-        }
-
-        if (name && !email) {
-            const result = {
-                fname: user.fname,
-                lname: user.lname,
-            };
-            res.json(result);
-            return;
-        }
-
-        if (!name && email) {
-            const result = {
-                email: user.email,
-            };
-            res.json(result);
-            return;
-        }
-
-        res.json(user);
-    } catch (err) {
-        next(err);
-        return;
-    }
-};
-
-/**
- * Get user by username
- * @route GET /api/users/:username
- */
-export const getUserByUsername = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-): void => {
-    try {
-        const username: string = validateUsernameString(req.params.username);
-
-        const user: User | undefined =
-            usersQueries.dbGetUserByUsername(username);
+        const user: User | undefined = usersQueries.dbGetUserById(userId);
 
         if (user === undefined) {
             next(new HttpError('User Not Found', 404));
@@ -110,37 +59,6 @@ export const getUserByUsername = (
         }
 
         res.json(user);
-        return;
-    } catch (err) {
-        next(err);
-        return;
-    }
-};
-
-/*
- * Delete user by ID
- * @route DELETE /api/users/id/:id
- * @note  User must authenticate to delete
- */
-export const deleteUserById = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-): void => {
-    try {
-        const id: number = validateParamNumber(req.params.id);
-
-        const deletedUser = usersQueries.dbDeleteUser(id);
-
-        if (deletedUser > 0) {
-            console.log(`User Deleted. Id: ${id}`);
-            res.status(204).end();
-            return;
-        } else {
-            console.log(`Couldn't Delete User. Id: ${id}`);
-            next(new HttpError('User Not Found', 404));
-            return;
-        }
     } catch (err) {
         next(err);
         return;
@@ -149,42 +67,133 @@ export const deleteUserById = (
 
 /**
  * Change user information
- * @route PATCH /api/users/id/:id
- * This controller has issue that it can only change info by provided /id/:id and doesnt
- * support /users/:username path
+ * @route PATCH /api/users/me
  */
-export const changeUserInfoById = (
-    req: Request,
+export const changeUserInfo = (
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
 ): void => {
     try {
-        const userBody: User = validateUserPatchBody(req.body);
+        if (!req.user) {
+            next(new HttpError('Not Authenticated', 403));
+            return;
+        }
 
-        const newUserInfo = userBody;
+        const newUserInfo: User = validateUserPatchBody(req.body);
 
-        const id = validateParamNumber(req.params.id);
+        const userId = req.user.id;
 
-        const existingUser = usersQueries.dbGetUserById(id);
+        const user: User | undefined = usersQueries.dbGetUserById(userId);
 
-        if (existingUser === undefined) {
+        if (user === undefined) {
             next(new HttpError('User Not Found', 404));
             return;
         }
 
-        const updatedUser: User = { ...existingUser, ...newUserInfo };
+        const updatedUser: User = { ...user, ...newUserInfo };
 
-        const result = usersQueries.dbUpdateUser(
-            updatedUser.username,
-            updatedUser.fname,
-            updatedUser.lname,
-            updatedUser.email,
-            id,
-        );
+        const result = usersQueries.dbUpdateUser(userId, updatedUser);
 
-        console.log(`Updated user ${result}`);
+        if (result !== 1) {
+            next(new Error('Couldnt save users to db'));
+        }
 
-        res.json({ msg: 'Updated successfuly' });
+        res.json({ message: 'Updated Successfuly' });
+    } catch (err) {
+        next(err);
+        return;
+    }
+};
+
+/*
+ * Delete user
+ * @route DELETE /api/users/me
+ */
+export const deleteUser = (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+): void => {
+    try {
+        if (!req.user) {
+            next(new HttpError('Not Authenticated', 401));
+            return;
+        }
+
+        const userId = req.user.id;
+
+        const deleted = usersQueries.dbDeleteUser(userId);
+
+        if (deleted !== 1) {
+            next(new Error('Couldnt delete user from db'));
+            return;
+        }
+
+        res.json({ message: 'User Deleted' });
+    } catch (err) {
+        next(err);
+        return;
+    }
+};
+
+/**
+ * Change user password
+ * @route PATCH users/me/password
+ */
+export const changeUserPassword = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
+    try {
+        const pwd: PasswordChange | undefined = validatePwdPatchBody(req.body);
+
+        if (!pwd) {
+            next(new HttpError('Bad Request Body', 400));
+            return;
+        }
+
+        if (pwd.oldPassword === pwd.newPassword) {
+            next(
+                new HttpError(
+                    'New Password Must Be Different from Old Password',
+                ),
+            );
+            return;
+        }
+
+        if (!req.user) {
+            next(new HttpError('Not Authorized', 401));
+            return;
+        }
+
+        const userId = req.user.id;
+
+        const oldPwdHash = authQueries.dbGetUserPwdHash(userId);
+
+        if (!oldPwdHash) {
+            next(new Error('Couldnt get user pwd from db'));
+            return;
+        }
+
+        const valid = await confirmUserPassword(pwd.oldPassword, oldPwdHash);
+
+        if (!valid) {
+            next(new HttpError('Invalid Old Password', 400));
+            return;
+        }
+
+        const newPwdHash = await hashUserPassword(pwd.newPassword);
+
+        const inserted = authQueries.dbUpdateUserPwd(newPwdHash, userId);
+
+        if (inserted !== 1) {
+            next(new Error('Couldnt save new pwd to db'));
+            return;
+        }
+
+        res.json({ message: 'Password Changed Successfuly' });
     } catch (err) {
         next(err);
         return;

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import authQueries from '../database/authQueries';
 import usersQueries from '../database/usersQueries';
 import {
     validateUserInput,
@@ -72,7 +73,7 @@ export async function loginUser(
             return;
         }
 
-        const pwd_hash = usersQueries.dbGetUserPwdHash(user.id);
+        const pwd_hash = authQueries.dbGetUserPwdHash(user.id);
 
         if (pwd_hash === undefined) {
             next(new HttpError('Invalid username or password', 401));
@@ -102,7 +103,7 @@ export async function loginUser(
 
         const expiresAt = new Date(exp * 1000).toISOString();
 
-        const inserted = usersQueries.dbAddSession(
+        const inserted = authQueries.dbAddSession(
             sessionId,
             user.id,
             expiresAt,
@@ -151,16 +152,17 @@ export function refreshLogin(
             JWT_REFRESH_KEY,
         ) as RefreshPayload;
 
-        console.log(payload);
+        const { sessionId, id, username } = payload;
 
-        const { sessionId, userId, username } = payload;
+        // Swapping names so my program doesnt DIE
+        const userId = id;
 
         if (!sessionId) {
             next(new HttpError('Invalid Refresh Token', 401));
             return;
         }
 
-        const session: Session | undefined = usersQueries.dbGetSession(userId);
+        const session: Session | undefined = authQueries.dbGetSession(userId);
 
         if (session === undefined || session.session_id !== sessionId) {
             next(new HttpError('Session Not Found Or Revoked', 403));
@@ -170,7 +172,7 @@ export function refreshLogin(
         const isExpired = new Date(session.expires_at).getTime() < Date.now();
 
         if (isExpired) {
-            const expiredDeleted = usersQueries.dbDeleteSession(sessionId);
+            const expiredDeleted = authQueries.dbDeleteSession(sessionId);
             if (expiredDeleted !== 1) {
                 next(new Error('Expired session was not deleted from db'));
                 return;
@@ -179,7 +181,7 @@ export function refreshLogin(
             return;
         }
 
-        const rotatedDeleted = usersQueries.dbDeleteSession(sessionId);
+        const rotatedDeleted = authQueries.dbDeleteSession(sessionId);
         if (rotatedDeleted !== 1) {
             next(new Error('Session was not deleted from db'));
             return;
@@ -193,7 +195,7 @@ export function refreshLogin(
             Date.now() + 7 * 24 * 60 * 60 * 1000,
         ).toISOString();
 
-        const inserted = usersQueries.dbAddSession(
+        const inserted = authQueries.dbAddSession(
             newSessionId,
             userId,
             expiresAt,

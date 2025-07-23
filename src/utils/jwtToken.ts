@@ -18,14 +18,14 @@ export function generateJwtToken(
         throw new Error('Jwt Keys Not Loaded');
     }
     const accessPayload = {
-        userId: id,
+        id: id,
         username: username,
     };
 
     const finalSessionId = sessionId || uuidv4();
 
     const refreshPayload = {
-        userId: id,
+        id: id,
         username: username,
         sessionId: finalSessionId,
     };

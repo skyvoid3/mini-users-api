@@ -20,7 +20,7 @@ db.prepare(
         user_id INTEGER PRIMARY KEY,
         password_hash VARCHAR NOT NULL,
         last_changed_at TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 `,
 ).run();
@@ -32,7 +32,7 @@ db.prepare(
         user_id INTEGER NOT NULL,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         expires_at TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 `
 ).run();

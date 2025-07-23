@@ -17,6 +17,7 @@ export interface NewUser {
     email: string;
     password: string;
 }
+
 export interface UserAuth {
     user_id: number;
     password_hash: string;
@@ -66,6 +67,11 @@ export interface RefreshPayload extends JwtPayload {
     username: string;
 }
 
+export interface PasswordChange {
+    oldPassword: string;
+    newPassword: string;
+}
+
 export const nameRegex = /^\p{L}+$/u;
 export const usrnameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
 export const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
@@ -80,3 +86,4 @@ export const allowedKeysAuth = [
     'password',
 ];
 export const allowedKeysCreds = ['username', 'password'];
+export const allowedKeysPwdChange = ['oldPassword', 'newPassword'];
