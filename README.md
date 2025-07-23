@@ -11,16 +11,7 @@ It’s a small project to demonstrate backend fundamentals like routing, databas
 - ✅ Synchronous queries via `better-sqlite3` for simplicity  
 - ✅ **Express.js** server with clean route structure  
 - ✅ **Morgan** logger for request/response headers and DB queries  
-- ✅ Simple **Base64 authentication** (temporary)
-
----
-
-## 🔐 Authentication
-
-Authentication is currently handled via the `Authorization` header using **Base64-encoded credentials**.
-
-> ⚠️ **Note:** This is for learning/demo purposes only. It is **not secure for production**.  
-> JWT-based Bearer authentication is planned for a more realistic and secure setup.
+- ✅ JWT based authentication with access and refresh tokens for secure session monitoring
 
 ---
 
@@ -37,7 +28,6 @@ This mini-project was built to:
 
 ## 🛠 What's next?
 
-- [ ] Replace Base64 with JWT + Bearer token auth  
 - [ ] Add user roles and permissions  
 - [ ] Expand API endpoints (e.g., update, search)  
 - [ ] Add unit tests and test DB support
@@ -50,6 +40,8 @@ This mini-project was built to:
 - Express  
 - SQLite (`better-sqlite3`)  
 - Morgan (for request logging)
+- Bcrypt (for password hashing)
+- JWT 
 
 ---
 
