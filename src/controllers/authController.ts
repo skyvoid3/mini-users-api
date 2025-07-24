@@ -14,6 +14,7 @@ import {
     RefreshPayload,
     UsernameId,
     Session,
+    AuthenticatedRequest,
 } from '../myTypes/types';
 import { HttpError } from '../middleware/error';
 import { generateJwtToken } from '../utils/jwtToken';
@@ -118,7 +119,58 @@ export async function loginUser(
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
         }).json({ message: 'Login successful', accessToken });
+    } catch (err) {
+        next(err);
+        return;
+    }
+}
+
+/**
+ * Logout User
+ * @route POST api/auth/logout
+ * Deletes session from db and invalidates access and refresh tokens
+ */
+export function logoutUser(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+): void {
+    try {
+        if (!JWT_REFRESH_KEY) {
+            next(new Error('Coudlnt load JWT keys'));
+            return;
+        }
+
+        const refreshToken = req.cookies?.refreshToken;
+
+        if (!refreshToken) {
+            res.json({ message: 'Logged Out' });
+            return;
+        }
+
+        const payload = jwt.verify(
+            refreshToken,
+            JWT_REFRESH_KEY,
+        ) as RefreshPayload;
+        const sessionId = payload.sessionId;
+
+        const deleted = authQueries.dbDeleteSession(sessionId);
+
+        if (!deleted) {
+            next(new Error('Couldnt delete session from db'));
+            return;
+        }
+
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+        });
+
+        res.json({ message: 'Logged Out' });
     } catch (err) {
         next(err);
         return;
@@ -177,7 +229,7 @@ export function refreshLogin(
                 next(new Error('Expired session was not deleted from db'));
                 return;
             }
-            next(new HttpError('Session Expired', 403));
+            next(new HttpError('Session Expired', 401));
             return;
         }
 
@@ -210,6 +262,7 @@ export function refreshLogin(
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
         }).json({ accessToken: response.accessToken });
     } catch (err) {
         next(err);

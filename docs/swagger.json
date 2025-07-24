@@ -1,0 +1,454 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Mini Users API",
+        "version": "1.0.0",
+        "description": "Users API for portfolio project"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:7070",
+            "description": "Local server"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+
+    "paths": {
+        "/api/auth/signup": {
+            "post": {
+                "summary": "Sign up a new user",
+                "description": "Creates a new user account.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignupInput"
+                            },
+                            "example": {
+                                "fname": "John",
+                                "lname": "Doe",
+                                "username": "johndoe",
+                                "email": "john@example.com",
+                                "password": "MySecurePassword123!"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User successfully created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessSignupResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data (e.g. missing fields, invalid email)"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "summary": "Log in a user",
+                "description": "Authenticates user and returns an access token. Sets refreshToken cookie.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginInput"
+                            },
+                            "example": {
+                                "username": "johndoe",
+                                "password": "MySecurePassword123!"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginSuccessResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "description": "refreshToken cookie is set with HttpOnly, Secure, Max-Age=7 days, SameSite=Strict",
+                                "schema": {
+                                    "type": "string",
+                                    "example": "refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9; HttpOnly; Secure; Max-Age=604800; SameSite=Strict; Path=/"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input data"
+                    },
+                    "401": {
+                        "description": "Invalid username or password"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "summary": "Refresh the session access JWT token",
+                "description": "Client sends the refreshToken in a cookie. If valid, server issues a new access token.",
+                "security": [{ "cookieAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Access token refreshed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RefreshSuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid refresh token"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "summary": "Log out user",
+                "description": "Logs out the user by deleting the refresh session and clearing the refresh token cookie.",
+                "security": [{ "cookieAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Successfully logged out",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged Out"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+
+        "/api/users/me": {
+            "get": {
+                "summary": "Get current user profile",
+                "description": "Returns the current authenticated user's profile.",
+                "security": [{ "bearerAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserProfile"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token"
+                    },
+                    "404": {
+                        "description": "User Not Found"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update user profile",
+                "description": "Updates one or more fields in the current user's profile.",
+                "security": [{ "bearerAuth": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserUpdateInput"
+                            },
+                            "example": {
+                                "fname": "NewName",
+                                "email": "newemail@example.com"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User info updated successfully"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "User Not Found"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete user account",
+                "description": "Deletes the current authenticated user's account.",
+                "security": [{ "bearerAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User deleted successfully"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "User Not Found"
+                    }
+                }
+            }
+        },
+        "/api/users/me/password": {
+            "post": {
+                "summary": "Change user password",
+                "description": "Changes the user's password. Requires old and new password.",
+                "security": [{ "bearerAuth": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PasswordChangeInput"
+                            },
+                            "example": {
+                                "oldPassword": "OldPass1@23",
+                                "newPassword": "NewPass45*6"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password changed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Password updated successfully"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or new password is same as old"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "User Not Found"
+                    }
+                }
+            }
+        }
+    },
+
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "schemas": {
+            "SignupInput": {
+                "type": "object",
+                "required": ["fname", "lname", "username", "email", "password"],
+                "properties": {
+                    "fname": {
+                        "type": "string",
+                        "example": "John"
+                    },
+                    "lname": {
+                        "type": "string",
+                        "example": "Doe"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "johndoe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "john@example.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "example": "MySecurePassword123!"
+                    }
+                }
+            },
+            "SuccessSignupResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "User created"
+                    },
+                    "username": {
+                        "type": "string",
+                        "example": "johndoe"
+                    }
+                }
+            },
+            "LoginInput": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "example": "johndoe"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "example": "MySecurePassword123!"
+                    }
+                }
+            },
+            "LoginSuccessResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Login Successful"
+                    },
+                    "accessToken": {
+                        "type": "string",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            },
+            "RefreshSuccessResponse": {
+                "type": "object",
+                "properties": {
+                    "accessToken": {
+                        "type": "string",
+                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            },
+            "UserProfile": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "number", "example": "123" },
+                    "username": { "type": "string", "example": "user" },
+                    "fname": { "type": "string", "example": "John" },
+                    "lname": { "type": "string", "example": "Doe" },
+                    "email": {
+                        "type": "string",
+                        "example": "john@example.com"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T12:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-07-01T15:00:00Z"
+                    }
+                }
+            },
+            "UserUpdateInput": {
+                "type": "object",
+                "properties": {
+                    "fname": { "type": "string", "example": "NewFirst" },
+                    "lname": { "type": "string", "example": "NewLast" },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "new@example.com"
+                    }
+                }
+            },
+            "PasswordChangeInput": {
+                "type": "object",
+                "required": ["oldPassword", "newPassword"],
+                "properties": {
+                    "oldPassword": {
+                        "type": "string",
+                        "example": "OldPass1@23"
+                    },
+                    "newPassword": {
+                        "type": "string",
+                        "example": "NewPass45*6"
+                    }
+                }
+            }
+        }
+    }
+}

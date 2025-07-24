@@ -22,7 +22,8 @@
     "resolveJsonModule": true,           // Allow importing .json files
     "forceConsistentCasingInFileNames": true, // Prevent case-sensitive issues between systems
     "allowJs": false,                    // Only allow .ts/.tsx files
-    "skipLibCheck": true                 // Speeds up build by skipping type checking of `node_modules`
+    "skipLibCheck": true,                 // Speeds up build by skipping type checking of `node_modules`
+    "allowSyntheticDefaultImports": true
   },
 
   "ts-node": {

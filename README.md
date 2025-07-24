@@ -8,7 +8,7 @@ It’s a small project to demonstrate backend fundamentals like routing, databas
 ## 🚀 Features
 
 - ✅ Uses **SQLite** for lightweight, file-based storage  
-- ✅ Synchronous queries via `better-sqlite3` for simplicity  
+- ✅ Synchronous queries via `better-sqlite3` for simplicity   
 - ✅ **Express.js** server with clean route structure  
 - ✅ **Morgan** logger for request/response headers and DB queries  
 - ✅ JWT based authentication with access and refresh tokens for secure session monitoring
@@ -29,7 +29,6 @@ This mini-project was built to:
 ## 🛠 What's next?
 
 - [ ] Add user roles and permissions  
-- [ ] Expand API endpoints (e.g., update, search)  
 - [ ] Add unit tests and test DB support
 
 ---
@@ -42,6 +41,7 @@ This mini-project was built to:
 - Morgan (for request logging)
 - Bcrypt (for password hashing)
 - JWT 
+- Swagger UI (for API docs)
 
 ---
 

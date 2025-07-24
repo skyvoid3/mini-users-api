@@ -6,6 +6,10 @@ import usersRouter from './routes/usersRoutes.js';
 import devLogger from './middleware/logger.js';
 import authRouter from './routes/authRoutes.js';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
+import redoc from 'redoc-express';
+import swaggerDocument from '../docs/swagger.json';
+import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +27,32 @@ const staticOptions = {
     },
 };
 
+// ALlow CORS for frontend
+app.use(
+    cors({
+        origin: 'http://localhost:7171',
+        credentials: true,
+        methods: ['GET', 'POST', 'DELETE', 'PATCH'],
+    }),
+);
+
+// Swagger UI docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Redoc docs
+app.get(
+    '/docs',
+    redoc({
+        title: 'Mini Users Api Docs',
+        specUrl: '/swagger.json',
+    }),
+);
+
+// Serve swagger.json so Redoc can load it
+app.get('/swagger.json', (req, res): void => {
+    res.sendFile(path.join(__dirname, '..', 'docs', 'swagger.json'));
+});
+
 // Logger Middleware
 app.use(devLogger);
 
@@ -33,7 +63,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Static Files Middleware
-app.use('/static', express.static(path.join(__dirname, 'public'), staticOptions));
+app.use(
+    '/static',
+    express.static(path.join(__dirname, 'public'), staticOptions),
+);
 
 app.get('/', (_req, res): void => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -41,7 +74,6 @@ app.get('/', (_req, res): void => {
 
 // Router for users api
 app.use('/api/users', usersRouter);
-
 
 // Router for auth api
 app.use('/api/auth', authRouter);
