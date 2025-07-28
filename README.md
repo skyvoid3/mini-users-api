@@ -53,13 +53,3 @@ This mini-project was built to:
 ### Database
 - SQLite (lightweight file-based database)
 
-## 📦 Getting Started
-
-To get the server and frontend running (assuming you have `npm` and `tsx`):
-
-```bash
-git clone https://github.com/skyvoid3/mini-users-api.git
-cd mini-users-api
-npm install
-npm start
-
