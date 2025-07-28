@@ -1,7 +1,7 @@
-# Mini Node API
+# Mini Node API + React Frontend
 
-This is a minimal RESTful API for managing users, built with Node.js and SQLite.  
-It’s a small project to demonstrate backend fundamentals like routing, database integration, and request handling.
+This is a minimal full-stack web application consisting of a RESTful API for managing users built with Node.js and SQLite, **plus** a React frontend for user interaction.  
+It’s a small project to demonstrate backend fundamentals like routing, database integration, and request handling, as well as frontend UI and client-server communication.
 
 ---
 
@@ -11,7 +11,8 @@ It’s a small project to demonstrate backend fundamentals like routing, databas
 - ✅ Synchronous queries via `better-sqlite3` for simplicity   
 - ✅ **Express.js** server with clean route structure  
 - ✅ **Morgan** logger for request/response headers and DB queries  
-- ✅ JWT based authentication with access and refresh tokens for secure session monitoring
+- ✅ JWT based authentication with access and refresh tokens for secure session monitoring  
+- ✅ React frontend for a user-friendly web interface
 
 ---
 
@@ -22,35 +23,43 @@ This mini-project was built to:
 - Practice building REST APIs from scratch  
 - Explore the request/response cycle, middleware, and routing  
 - Understand authentication and basic security concepts  
-- Gain hands-on experience with logging and SQLite
+- Gain hands-on experience with logging and SQLite  
+- Build a full web application with React frontend and Node backend
 
 ---
 
 ## 🛠 What's next?
 
 - [ ] Add user roles and permissions  
-- [ ] Add unit tests and test DB support
-
----
+- [ ] Add unit tests and test DB support  
+- [ ] Improve React frontend UI and UX
 
 ## 🧪 Tech Stack
 
+### Backend
 - Node.js  
 - Express  
 - SQLite (`better-sqlite3`)  
-- Morgan (for request logging)
-- Bcrypt (for password hashing)
-- JWT 
-- Swagger UI (for API docs)
+- Morgan (HTTP request logging)  
+- Bcrypt (password hashing)  
+- JWT (authentication)  
+- Swagger UI (API documentation)  
+- Redoc (another API documentation
 
----
+### Frontend
+- React  
+- Tailwind CSS (utility-first styling framework)  
+
+### Database
+- SQLite (lightweight file-based database)
 
 ## 📦 Getting Started
 
-To get the server running (assuming you have `npm` and `tsx`):
+To get the server and frontend running (assuming you have `npm` and `tsx`):
 
 ```bash
 git clone https://github.com/skyvoid3/mini-users-api.git
 cd mini-users-api
 npm install
 npm start
+
