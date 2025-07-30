@@ -16,14 +16,17 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Options for static files
-const staticOptions = {
-    dotfiles: 'ignore',
-    etag: true,
-    extensions: ['html', 'htm', 'css', 'js'],
-    index: false,
-    setHeaders(res: Response): void {
-        res.set('Cache-Control', 'public, immutable, max-age=31536000');
+// Options for avatar uploads
+const uploadStaticOptions = {
+    dotfiles: 'ignore', // don't serve hidden files (like .env)
+    etag: true, // enable etags for cache validation
+    extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'], // allowed image extensions only
+    index: false, // disable directory indexing (no listing folders)
+    lastModified: true, // set Last-Modified header for caching
+    maxAge: '30d', // cache client-side for 30 days
+    setHeaders(res: Response) {
+        // Immutable cache because avatar URLs should be unique and versioned
+        res.set('Cache-Control', 'public, max-age=2592000, immutable');
     },
 };
 
@@ -62,15 +65,11 @@ app.use(express.json());
 // Cookie Parser
 app.use(cookieParser());
 
-// Static Files Middleware
+// Upload Files Middleware
 app.use(
-    '/static',
-    express.static(path.join(__dirname, 'public'), staticOptions),
+    '/uploads',
+    express.static(path.join(__dirname, '..', 'uploads'), uploadStaticOptions),
 );
-
-app.get('/', (_req, res): void => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 // Router for users api
 app.use('/api/users', usersRouter);

@@ -6,6 +6,7 @@ export interface User {
     fname: string;
     lname: string;
     email: string;
+    avatarUrl: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -51,14 +52,14 @@ export interface Session {
 }
 
 export interface LoginResponse {
-    sessionId: string,
+    sessionId: string;
     accessToken: string;
     refreshToken: string;
     message: string;
 }
 
 export interface AuthenticatedRequest extends Request {
-    user?: { id: number; username: string, [key: string]: any };
+    user?: { id: number; username: string; [key: string]: any };
 }
 
 export interface RefreshPayload extends JwtPayload {

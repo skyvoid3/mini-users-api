@@ -48,6 +48,14 @@ export const dbAddUserWithAuth = (
     return newUserId;
 };
 
+export const dbAddUserAvatar = (url: string, id: number): number | bigint => {
+    const stmt = db.prepare(
+        'UPDATE users SET avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    );
+    const result = stmt.run(url, id);
+    return result.lastInsertRowid;
+};
+
 export const dbGetUserById = (id: number): User | undefined => {
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
     const user = stmt.get(id);
@@ -84,9 +92,16 @@ export const dbDeleteUser = (id: number): number => {
 
 export const dbUpdateUser = (id: number, u: User): number | bigint => {
     const stmt = db.prepare(
-        'UPDATE users SET username = ?, fname = ?, lname = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        'UPDATE users SET username = ?, fname = ?, lname = ?, email = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     );
-    const result = stmt.run(u.username, u.fname, u.lname, u.email, id);
+    const result = stmt.run(
+        u.username,
+        u.fname,
+        u.lname,
+        u.email,
+        u.avatarUrl,
+        id,
+    );
     return result.changes;
 };
 
@@ -98,6 +113,7 @@ interface UsersQueries {
         email: string,
     ) => number | bigint;
     dbAddUserWithAuth: (u: NewUser, password_hash: string) => number | bigint;
+    dbAddUserAvatar: (url: string, id: number) => number | bigint;
     dbGetUserByUsername: (username: string) => User | undefined;
     dbGetUserById: (id: number) => User | undefined;
     dbGetUsernameAndId: (username: string) => UsernameId | undefined;
@@ -109,6 +125,7 @@ interface UsersQueries {
 const usersQueries: UsersQueries = {
     dbAddNewUser,
     dbAddUserWithAuth,
+    dbAddUserAvatar,
     dbGetUserById,
     dbGetUsernameAndId,
     dbGetUsers,

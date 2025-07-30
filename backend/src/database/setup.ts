@@ -8,6 +8,7 @@ db.prepare(
         fname TEXT NOT NULL,
         lname TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
+        avatar_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );   
@@ -34,7 +35,7 @@ db.prepare(
         expires_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
-`
+`,
 ).run();
 
 console.log('Users table created');

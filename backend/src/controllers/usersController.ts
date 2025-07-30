@@ -199,3 +199,40 @@ export const changeUserPassword = async (
         return;
     }
 };
+
+/**
+ * Upload user avatar
+ * @route POST users/me/upload-avatar
+ */
+export function uploadUserAvatar(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+): void {
+    try {
+        if (!req.user) {
+            next(new HttpError('Not Authorized', 401));
+            return;
+        }
+
+        const userId = req.user.id;
+
+        if (!req.file) {
+            next(new HttpError('No File Uploaded', 400));
+            return;
+        }
+
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+        const updated = usersQueries.dbAddUserAvatar(avatarUrl, userId);
+        if (updated !== 1) {
+            next(new Error('Couldnt upload avatar'));
+            return;
+        }
+
+        res.json({ message: 'Avatar uploaded successfuly', avatarUrl });
+    } catch (err) {
+        next(err);
+        return;
+    }
+}
