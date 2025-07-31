@@ -35,3 +35,27 @@ export function validatePassword(password: string): string {
 
     return '';
 }
+
+export function validateRepeatPassword(
+    password: string,
+    repeatPassword: string,
+): string {
+    if (password !== repeatPassword) {
+        return 'Passwords dont match';
+    }
+    return '';
+}
+
+export function validateLoginPassword(password: string) {
+    if (password.length < 8) {
+        return 'Password should be atleast 8 characters long';
+    }
+    return '';
+}
+
+export function validateLoginUsername(username: string) {
+    if (!username.trim()) return 'Username is required';
+    if (!usrnameRegex.test(username) || username.length < 3)
+        return 'Please provide valid username';
+    return '';
+}
