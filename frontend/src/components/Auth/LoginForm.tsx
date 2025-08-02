@@ -10,7 +10,7 @@ import { getLoginErrorMessage } from '@/utils/errorHandlers';
 
 export default function LoginForm() {
     const navigate = useNavigate();
-    const { login, user, isAuthReady } = useAuth();
+    const { login, userPayload, isAuthReady } = useAuth();
 
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
@@ -36,16 +36,16 @@ export default function LoginForm() {
     const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
     useEffect(() => {
-        if (isAuthReady && user) {
+        if (isAuthReady && userPayload) {
             navigate('/profile', { replace: true });
         }
-    }, [user, navigate, isAuthReady]);
+    }, [userPayload, navigate, isAuthReady]);
 
     if (!isAuthReady) {
         return null;
     }
 
-    if (user) {
+    if (userPayload) {
         return null;
     }
 

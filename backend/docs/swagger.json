@@ -16,7 +16,6 @@
             "bearerAuth": []
         }
     ],
-
     "paths": {
         "/api/auth/signup": {
             "post": {
@@ -92,7 +91,7 @@
                                 "description": "refreshToken cookie is set with HttpOnly, Secure, Max-Age=7 days, SameSite=Strict",
                                 "schema": {
                                     "type": "string",
-                                    "example": "refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9; HttpOnly; Secure; Max-Age=604800; SameSite=Strict; Path=/"
+                                    "example": "refreshToken=ey...; HttpOnly; Secure; Max-Age=604800; SameSite=Strict; Path=/"
                                 }
                             }
                         }
@@ -162,7 +161,6 @@
                 }
             }
         },
-
         "/api/users/me": {
             "get": {
                 "summary": "Get current user profile",
@@ -310,9 +308,93 @@
                     }
                 }
             }
+        },
+        "/api/users/me/upload-avatar": {
+            "post": {
+                "summary": "Upload user avatar",
+                "description": "Authenticated user uploads a profile avatar image. Only image files are accepted.",
+                "security": [{ "bearerAuth": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "avatar": {
+                                        "type": "string",
+                                        "format": "binary",
+                                        "description": "Image file to upload as avatar"
+                                    }
+                                },
+                                "required": ["avatar"]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Avatar uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UploadAvatarSuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - no file uploaded or wrong type",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "No file uploaded"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Not Authorized"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error when storing avatar",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Could not update avatar in database"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
-
     "components": {
         "securitySchemes": {
             "bearerAuth": {
@@ -326,56 +408,26 @@
                 "type": "object",
                 "required": ["fname", "lname", "username", "email", "password"],
                 "properties": {
-                    "fname": {
-                        "type": "string",
-                        "example": "John"
-                    },
-                    "lname": {
-                        "type": "string",
-                        "example": "Doe"
-                    },
-                    "username": {
-                        "type": "string",
-                        "example": "johndoe"
-                    },
-                    "email": {
-                        "type": "string",
-                        "format": "email",
-                        "example": "john@example.com"
-                    },
-                    "password": {
-                        "type": "string",
-                        "format": "password",
-                        "example": "MySecurePassword123!"
-                    }
+                    "fname": { "type": "string" },
+                    "lname": { "type": "string" },
+                    "username": { "type": "string" },
+                    "email": { "type": "string", "format": "email" },
+                    "password": { "type": "string", "format": "password" }
                 }
             },
             "SuccessSignupResponse": {
                 "type": "object",
                 "properties": {
-                    "message": {
-                        "type": "string",
-                        "example": "User created"
-                    },
-                    "username": {
-                        "type": "string",
-                        "example": "johndoe"
-                    }
+                    "message": { "type": "string", "example": "User created" },
+                    "username": { "type": "string", "example": "johndoe" }
                 }
             },
             "LoginInput": {
                 "type": "object",
                 "required": ["username", "password"],
                 "properties": {
-                    "username": {
-                        "type": "string",
-                        "example": "johndoe"
-                    },
-                    "password": {
-                        "type": "string",
-                        "format": "password",
-                        "example": "MySecurePassword123!"
-                    }
+                    "username": { "type": "string" },
+                    "password": { "type": "string", "format": "password" }
                 }
             },
             "LoginSuccessResponse": {
@@ -385,67 +437,53 @@
                         "type": "string",
                         "example": "Login Successful"
                     },
-                    "accessToken": {
-                        "type": "string",
-                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    }
+                    "accessToken": { "type": "string" }
                 }
             },
             "RefreshSuccessResponse": {
                 "type": "object",
                 "properties": {
-                    "accessToken": {
-                        "type": "string",
-                        "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    }
+                    "accessToken": { "type": "string" }
                 }
             },
             "UserProfile": {
                 "type": "object",
                 "properties": {
-                    "id": { "type": "number", "example": "123" },
-                    "username": { "type": "string", "example": "user" },
-                    "fname": { "type": "string", "example": "John" },
-                    "lname": { "type": "string", "example": "Doe" },
-                    "email": {
-                        "type": "string",
-                        "example": "john@example.com"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2024-01-01T12:00:00Z"
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2024-07-01T15:00:00Z"
-                    }
+                    "id": { "type": "number" },
+                    "username": { "type": "string" },
+                    "fname": { "type": "string" },
+                    "lname": { "type": "string" },
+                    "email": { "type": "string" },
+                    "created_at": { "type": "string", "format": "date-time" },
+                    "updated_at": { "type": "string", "format": "date-time" }
                 }
             },
             "UserUpdateInput": {
                 "type": "object",
                 "properties": {
-                    "fname": { "type": "string", "example": "NewFirst" },
-                    "lname": { "type": "string", "example": "NewLast" },
-                    "email": {
-                        "type": "string",
-                        "format": "email",
-                        "example": "new@example.com"
-                    }
+                    "fname": { "type": "string" },
+                    "lname": { "type": "string" },
+                    "email": { "type": "string", "format": "email" }
                 }
             },
             "PasswordChangeInput": {
                 "type": "object",
                 "required": ["oldPassword", "newPassword"],
                 "properties": {
-                    "oldPassword": {
+                    "oldPassword": { "type": "string" },
+                    "newPassword": { "type": "string" }
+                }
+            },
+            "UploadAvatarSuccessResponse": {
+                "type": "object",
+                "properties": {
+                    "message": {
                         "type": "string",
-                        "example": "OldPass1@23"
+                        "example": "Avatar uploaded successfully"
                     },
-                    "newPassword": {
+                    "avatarUrl": {
                         "type": "string",
-                        "example": "NewPass45*6"
+                        "example": "/uploads/avatars/example.jpg"
                     }
                 }
             }

@@ -12,14 +12,13 @@ import {
     LoginResponse,
     NewUser,
     RefreshPayload,
-    UsernameId,
     Session,
     AuthenticatedRequest,
+    UserPayload,
 } from '../myTypes/types';
 import { HttpError } from '../middleware/error';
 import { generateJwtToken } from '../utils/jwtToken';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 
 const JWT_REFRESH_KEY = process.env.JWT_REFRESH_KEY;
 
@@ -65,40 +64,60 @@ export async function loginUser(
     try {
         const creds: Credentials = validateLoginBody(req.body);
 
-        const user: UsernameId | undefined = usersQueries.dbGetUsernameAndId(
+        const user: UserPayload | undefined = usersQueries.dbGetUserPayload(
             creds.username,
         );
+        if (!user) {
+            next(new HttpError('User Does Not Exist', 404));
+            return;
+        }
 
-        if (user === undefined) {
+        const pwdHash = authQueries.dbGetUserPwdHash(user.id);
+        if (!pwdHash) {
             next(new HttpError('Invalid username or password', 401));
             return;
         }
 
-        const pwd_hash = authQueries.dbGetUserPwdHash(user.id);
-
-        if (pwd_hash === undefined) {
-            next(new HttpError('Invalid username or password', 401));
-            return;
-        }
-
-        const valid = await confirmUserPassword(creds.password, pwd_hash);
-
+        const valid = await confirmUserPassword(creds.password, pwdHash);
         if (!valid) {
             next(new HttpError('Invalid username or password', 401));
             return;
         }
 
-        const { accessToken, refreshToken }: LoginResponse = generateJwtToken(
-            user.id,
-            user.username,
-        );
+        const existingSession = authQueries.dbGetValidSession(user.id);
+
+        if (existingSession) {
+            const { accessToken, refreshToken } = generateJwtToken(
+                user.id,
+                user,
+                existingSession.sessionId,
+            );
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+                path: '/',
+            }).json({
+                message: 'Reused existing session',
+                accessToken,
+            });
+
+            return;
+        }
+
+        const { accessToken, refreshToken } = generateJwtToken(user.id, user);
 
         const decodedRefresh = jwt.decode(refreshToken) as RefreshPayload;
-
         const { sessionId, exp } = decodedRefresh;
 
         if (!sessionId || !exp || typeof exp !== 'number') {
-            next(new Error('Couldnt get sessionId'));
+            next(
+                new Error(
+                    'Could not extract sessionId or expiry from refreshToken',
+                ),
+            );
             return;
         }
 
@@ -109,21 +128,23 @@ export async function loginUser(
             user.id,
             expiresAt,
         );
-
         if (inserted !== 1) {
-            next(new Error('Couldnt save sessionId'));
+            next(new Error('Could not save new session to database'));
+            return;
         }
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 30 * 24 * 60 * 60 * 1000,
             path: '/',
-        }).json({ message: 'Login successful', accessToken });
+        }).json({
+            message: 'Login successful',
+            accessToken,
+        });
     } catch (err) {
         next(err);
-        return;
     }
 }
 
@@ -179,7 +200,7 @@ export function logoutUser(
 
 /**
  * Issue new access tokens
- * @route POST api/auth/refresh
+ * @route POST /api/auth/refresh
  */
 export function refreshLogin(
     req: Request,
@@ -204,24 +225,29 @@ export function refreshLogin(
             JWT_REFRESH_KEY,
         ) as RefreshPayload;
 
-        const { sessionId, id, username } = payload;
-
-        // Swapping names so my program doesnt DIE
-        const userId = id;
+        const { sessionId, userId, username } = payload;
 
         if (!sessionId) {
             next(new HttpError('Invalid Refresh Token', 401));
             return;
         }
 
+        const user: UserPayload | undefined =
+            usersQueries.dbGetUserPayload(username);
+
+        if (!user) {
+            next(new HttpError('User does not exist', 404));
+            return;
+        }
+
         const session: Session | undefined = authQueries.dbGetSession(userId);
 
-        if (session === undefined || session.session_id !== sessionId) {
+        if (!session || session.sessionId !== sessionId) {
             next(new HttpError('Session Not Found Or Revoked', 403));
             return;
         }
 
-        const isExpired = new Date(session.expires_at).getTime() < Date.now();
+        const isExpired = new Date(session.expiresAt).getTime() < Date.now();
 
         if (isExpired) {
             const expiredDeleted = authQueries.dbDeleteSession(sessionId);
@@ -233,35 +259,13 @@ export function refreshLogin(
             return;
         }
 
-        const rotatedDeleted = authQueries.dbDeleteSession(sessionId);
-        if (rotatedDeleted !== 1) {
-            next(new Error('Session was not deleted from db'));
-            return;
-        }
-
-        const newSessionId = uuidv4();
-
-        const response = generateJwtToken(userId, username, newSessionId);
-
-        const expiresAt = new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000,
-        ).toISOString();
-
-        const inserted = authQueries.dbAddSession(
-            newSessionId,
-            userId,
-            expiresAt,
-        );
-        if (inserted !== 1) {
-            next(new Error('Couldnt save new session to db'));
-            return;
-        }
+        const response = generateJwtToken(userId, user, sessionId);
 
         res.cookie('refreshToken', response.refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 30 * 24 * 60 * 60 * 1000,
             path: '/',
         }).json({ accessToken: response.accessToken });
     } catch (err) {

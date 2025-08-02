@@ -1,13 +1,16 @@
 import UserHeader from './UserHeader';
 import UserDetails from './UserDetails';
-import LogoutButton from './Buttons/LogoutButton';
+import type { User } from '@/types';
 
-export default function UserProfile() {
+type UserProfileProps = {
+    user: User;
+};
+
+export default function UserProfile({ user }: UserProfileProps) {
     return (
         <div className="user-profile">
-            <UserHeader />
-            <UserDetails />
-            <LogoutButton />
+            <UserHeader user={user} />
+            <UserDetails user={user} />
         </div>
     );
 }

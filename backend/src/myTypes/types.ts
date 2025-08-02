@@ -20,14 +20,14 @@ export interface NewUser {
 }
 
 export interface UserAuth {
-    user_id: number;
-    password_hash: string;
-    last_changed_at: string | null;
+    userId: number;
+    passwordHash: string;
+    lastChangedAt: string | null;
 }
 
 export interface NewUserAuth {
-    user_id: number;
-    password_hash: string;
+    userId: number;
+    passwordHash: string;
 }
 
 export interface Credentials {
@@ -35,20 +35,20 @@ export interface Credentials {
     password: string;
 }
 
-export interface UsernameId {
+export interface UserPayload {
     id: number;
     username: string;
 }
 
 export interface UserPwdHash {
-    password_hash: string;
+    passwordHash: string;
 }
 
 export interface Session {
-    session_id: string;
-    user_id: number;
-    expires_at: string;
-    created_at: string;
+    sessionId: string;
+    userId: number;
+    expiresAt: string;
+    createdAt: string;
 }
 
 export interface LoginResponse {

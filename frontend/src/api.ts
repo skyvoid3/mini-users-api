@@ -8,17 +8,14 @@ interface CustomInternalAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 let accessToken: string | null = null;
 
-export function setAccessToken(token: string) {
+// This function gets used in authContext module to sync axios and react accessTokens
+export function syncAccessToken(token: string | null) {
     accessToken = token;
-}
-
-export function clearAccessToken() {
-    accessToken = null;
 }
 
 const api = axios.create({
     baseURL: 'http://localhost:7070/api',
-    withCredentials: true, // ensures cookies (refresh token) are sent
+    withCredentials: true, // send cookies with requests
 });
 
 // Request Interceptor: attach Authorization header
@@ -59,8 +56,7 @@ api.interceptors.response.use(
                 const newAccessToken = refreshRes.data.accessToken;
 
                 if (newAccessToken) {
-                    // Update local token state
-                    setAccessToken(newAccessToken);
+                    syncAccessToken(newAccessToken);
 
                     // Re-send original request with updated token
                     return axios({
@@ -73,7 +69,6 @@ api.interceptors.response.use(
                     });
                 }
             } catch (refreshError) {
-                clearAccessToken();
                 return Promise.reject(refreshError);
             }
         }

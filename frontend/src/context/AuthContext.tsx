@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@/types';
+import type { UserPayload } from '@/types';
 import { jwtDecode } from 'jwt-decode';
-import api from '@/api';
+import api, { syncAccessToken } from '@/api';
 
 type AuthContextType = {
     token: string | null;
-    user: User | null;
+    userPayload: UserPayload | null;
     isAuthReady: boolean;
     login: (token: string) => void;
     logout: () => Promise<void>;
@@ -19,25 +19,27 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [token, setToken] = useState<string | null>(null);
-    const [user, setUser] = useState<User | null>(null);
+    const [userPayload, setUserPayload] = useState<UserPayload | null>(null);
     const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
 
+    // When token changes state this effect activates and tries to set the user payload
     useEffect(() => {
         if (token) {
             try {
-                const decoded = jwtDecode<User>(token);
-                setUser(decoded);
+                const decoded = jwtDecode<UserPayload>(token);
+                setUserPayload(decoded);
             } catch (err) {
                 if (dev) {
                     console.error('Invalid token', err);
                 }
-                setUser(null);
+                setUserPayload(null);
             }
         } else {
-            setUser(null);
+            setUserPayload(null);
         }
     }, [token]);
 
+    // Used on every page load or reload to get new accessToken
     useEffect(() => {
         async function refreshToken() {
             try {
@@ -45,16 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const freshToken = res.data?.accessToken;
                 if (freshToken) {
                     setToken(freshToken);
+                    syncAccessToken(freshToken);
                 } else {
                     setToken(null);
-                    setUser(null);
+                    setUserPayload(null);
                 }
             } catch (err) {
                 if (dev) {
                     console.error('Token refresh failed:', err);
                 }
                 setToken(null);
-                setUser(null);
+                syncAccessToken(null);
+                setUserPayload(null);
             } finally {
                 setIsAuthReady(true);
             }
@@ -68,11 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw new Error('Invalid token provided to login()');
         }
         setToken(newToken);
+        syncAccessToken(newToken);
     };
 
+    // Logout the user and delete session from db
     const logout = async () => {
         setToken(null);
-        setUser(null);
+        syncAccessToken(null);
+        setUserPayload(null);
         try {
             await api.post('/auth/logout');
         } catch (err) {
@@ -84,13 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return (
         <AuthContext.Provider
-            value={{ token, user, isAuthReady, login, logout }}
+            value={{ token, userPayload, isAuthReady, login, logout }}
         >
             {children}
         </AuthContext.Provider>
     );
 }
 
+// Custom hook for authContext
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {

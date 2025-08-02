@@ -1,8 +1,8 @@
-// The common statements/queries for working with users database
 import db from './index';
-import { NewUser, User, UsernameId } from '../myTypes/types';
+import { NewUser, User, UserPayload } from '../myTypes/types';
 import { SqliteError } from '../middleware/error';
 import { dbAddNewUserAuth } from './authQueries';
+import { toCamel, toCamelArray } from '../utils/toCamelCase';
 
 export const dbAddNewUser = (
     username: string,
@@ -19,16 +19,14 @@ export const dbAddNewUser = (
     } catch (err) {
         if (
             err instanceof Error &&
-            (err as any).code === 'SQLITE_CONSTRAINT_UNIQUE' &&
-            err.message.includes('users.username')
+            (err as any).code === 'SQLITE_CONSTRAINT_UNIQUE'
         ) {
-            throw new SqliteError('Username already exists');
-        } else if (
-            err instanceof Error &&
-            (err as any).code === 'SQLITE_CONSTRAINT_UNIQUE' &&
-            err.message.includes('users.email')
-        ) {
-            throw new SqliteError('Email already in use');
+            if (err.message.includes('users.username')) {
+                throw new SqliteError('Username already exists');
+            }
+            if (err.message.includes('users.email')) {
+                throw new SqliteError('Email already in use');
+            }
         }
         throw err;
     }
@@ -39,12 +37,7 @@ export const dbAddUserWithAuth = (
     password_hash: string,
 ): number | bigint => {
     const newUserId = dbAddNewUser(u.username, u.fname, u.lname, u.email);
-
-    const result = dbAddNewUserAuth(newUserId, password_hash);
-
-    if (result !== 1) {
-    }
-
+    dbAddNewUserAuth(newUserId, password_hash);
     return newUserId;
 };
 
@@ -59,29 +52,27 @@ export const dbAddUserAvatar = (url: string, id: number): number | bigint => {
 export const dbGetUserById = (id: number): User | undefined => {
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
     const user = stmt.get(id);
-    return user as User | undefined;
+    return toCamel<User>(user);
 };
 
-export const dbGetUsernameAndId = (
-    username: string,
-): UsernameId | undefined => {
+export const dbGetUserPayload = (username: string): UserPayload | undefined => {
     const stmt = db.prepare(
         'SELECT id, username FROM users WHERE username = ?',
     );
     const user = stmt.get(username);
-    return user as UsernameId | undefined;
+    return toCamel<UserPayload>(user);
 };
 
 export const dbGetUserByUsername = (username: string): User | undefined => {
     const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
     const user = stmt.get(username);
-    return user as User | undefined;
+    return toCamel<User>(user);
 };
 
 export const dbGetUsers = (limit: number): User[] | undefined => {
     const stmt = db.prepare('SELECT * FROM users LIMIT ?');
     const users = stmt.all(limit);
-    return users as User[] | undefined;
+    return toCamelArray<User>(users);
 };
 
 export const dbDeleteUser = (id: number): number => {
@@ -116,7 +107,7 @@ interface UsersQueries {
     dbAddUserAvatar: (url: string, id: number) => number | bigint;
     dbGetUserByUsername: (username: string) => User | undefined;
     dbGetUserById: (id: number) => User | undefined;
-    dbGetUsernameAndId: (username: string) => UsernameId | undefined;
+    dbGetUserPayload: (username: string) => UserPayload | undefined;
     dbGetUsers: (limit: number) => User[] | undefined;
     dbDeleteUser: (id: number) => number;
     dbUpdateUser: (id: number, u: User) => number | bigint;
@@ -127,7 +118,7 @@ const usersQueries: UsersQueries = {
     dbAddUserWithAuth,
     dbAddUserAvatar,
     dbGetUserById,
-    dbGetUsernameAndId,
+    dbGetUserPayload,
     dbGetUsers,
     dbGetUserByUsername,
     dbDeleteUser,

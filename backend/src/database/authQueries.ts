@@ -1,6 +1,7 @@
-// The common statements/queries for working with auth-related databases
+// Queries for auth databases
 import db from './index';
-import { Session, UserPwdHash } from '../myTypes/types';
+import { Session } from '../myTypes/types';
+import { toCamel } from '../utils/toCamelCase';
 
 export const dbAddNewUserAuth = (
     id: number | bigint,
@@ -29,16 +30,29 @@ export const dbGetUserPwdHash = (id: number): string | undefined => {
     const stmt = db.prepare(
         'SELECT password_hash FROM user_auth WHERE user_id = ?',
     );
-    const result = stmt.get(id) as UserPwdHash | undefined;
+    const result = stmt.get(id);
 
-    return result?.password_hash;
+    const camelResult = result
+        ? toCamel<{ passwordHash: string }>(result)
+        : undefined;
+
+    return camelResult?.passwordHash;
 };
 
 export const dbGetSession = (userId: number): Session | undefined => {
     const stmt = db.prepare('SELECT * FROM sessions WHERE user_id = ?');
     const result = stmt.get(userId) as Session | undefined;
 
-    return result;
+    return result ? toCamel<Session>(result) : undefined;
+};
+
+export const dbGetValidSession = (userId: number): Session | undefined => {
+    const stmt = db.prepare(
+        "SELECT * FROM sessions WHERE user_id = ? AND expires_at > datetime('now')",
+    );
+    const result = stmt.get(userId) as Session | undefined;
+
+    return result ? toCamel<Session>(result) : undefined;
 };
 
 export const dbDeleteSession = (sessionId: string): number => {
@@ -67,6 +81,7 @@ interface AuthQueries {
     ) => number | bigint;
     dbGetUserPwdHash: (id: number) => string | undefined;
     dbGetSession: (userId: number) => Session | undefined;
+    dbGetValidSession: (userId: number) => Session | undefined;
     dbDeleteSession: (sessionId: string) => number;
     dbUpdateUserPwd: (newPwd: string, id: number) => number;
 }
@@ -77,6 +92,7 @@ const authQueries: AuthQueries = {
     dbGetUserPwdHash,
     dbGetSession,
     dbDeleteSession,
+    dbGetValidSession,
     dbUpdateUserPwd,
 };
 

@@ -4,6 +4,13 @@ export type User = {
     lname: string;
     email: string;
     avatarUrl: string;
+    createdAt: string;
+};
+
+// JWT user payload
+export type UserPayload = {
+    id: number;
+    username: string;
 };
 
 // Used in SignupForm component to display error messages for input fields

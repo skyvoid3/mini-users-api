@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function SignupForm() {
     const navigate = useNavigate();
 
-    const { user, isAuthReady } = useAuth();
+    const { userPayload, isAuthReady } = useAuth();
 
     const [username, setUsername] = useState('');
     const [fname, setFname] = useState('');
@@ -46,16 +46,16 @@ export default function SignupForm() {
     const [formSubmitted, setFormSubmitted] = useState(false);
 
     useEffect(() => {
-        if (isAuthReady && user) {
+        if (isAuthReady && userPayload) {
             navigate('/profile', { replace: true });
         }
-    }, [user, navigate, isAuthReady]);
+    }, [userPayload, navigate, isAuthReady]);
 
     if (!isAuthReady) {
         return null;
     }
 
-    if (user) {
+    if (userPayload) {
         return null;
     }
 

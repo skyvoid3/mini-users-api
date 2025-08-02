@@ -1,28 +1,38 @@
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import SignupPage from './pages/SignupPage';
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
-import { PrivateRoute, PublicRoute } from './routes/AuthRoute';
+import NotFoundPage from './pages/NotFoundPage'; // Optional 404 page
+import { PrivateRoute, PrivateWrapper, PublicRoute } from './routes/AuthRoute';
+import MainLayout from './routes/MainLayout';
 
 export default function App() {
     return (
         <AuthProvider>
             <Routes>
-                <Route path="/" element={<LandingPage />} />
+                {/* All routes wrapped in MainLayout (with Navbar) */}
+                <Route element={<MainLayout />}>
+                    {/* Public pages */}
+                    <Route path="/" element={<LandingPage />} />
 
-                <Route element={<PublicRoute />}>
-                    <Route path="/signup" element={<SignupPage />} />
-                    <Route path="/login" element={<LoginPage />} />
+                    <Route element={<PublicRoute />}>
+                        <Route path="/signup" element={<SignupPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                    </Route>
+
+                    {/* Protected pages */}
+                    <Route element={<PrivateRoute />}>
+                        <Route element={<PrivateWrapper />}>
+                            <Route path="/profile" element={<ProfilePage />} />
+                        </Route>
+                    </Route>
+
+                    {/* 404 fallback */}
+                    <Route path="*" element={<NotFoundPage />} />
                 </Route>
-
-                <Route element={<PrivateRoute />}>
-                    <Route path="/profile" element={<ProfilePage />} />
-                </Route>
-
-                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </AuthProvider>
     );
